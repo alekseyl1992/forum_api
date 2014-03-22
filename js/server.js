@@ -11,9 +11,10 @@ app.use(express.static(path.join(__dirname, "public"))); // запуск ста�
 //mysql configuration
 var mysql = require('mysql');
 var pool  = mysql.createPool({
-    host     : '127.0.0.1',
-    user     : 'forum_api_user',
-    password : 'forum_api_pswd'
+    host        : '127.0.0.1',
+    database    : 'forum_api',
+    user        : 'forum_api_user',
+    password    : 'forum_api_pswd'
 });
 
 //modules
@@ -58,7 +59,7 @@ app.get(api_prefix + '/post/restore', post.restore);
 app.get(api_prefix + '/post/update', post.update);
 app.get(api_prefix + '/post/vote', post.vote);
 
-app.get(api_prefix + '/user/create', user.create);
+app.post(api_prefix + '/user/create', user.create);
 app.get(api_prefix + '/user/details', user.details);
 app.get(api_prefix + '/user/follow', user.follow);
 app.get(api_prefix + '/user/listFollowers', user.listFollowers);
