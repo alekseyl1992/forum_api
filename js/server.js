@@ -1,6 +1,7 @@
 var express = require('express');
 var path = require('path'); // модуль для парсинга пути
 var app = express();
+var async = require('async');
 
 app.use(express.logger('dev')); // выводим все запросы со статусами в консоль
 app.use(express.bodyParser()); // стандартный модуль, для парсинга JSON в запросах
@@ -18,10 +19,10 @@ var pool  = mysql.createPool({
 });
 
 //modules
-var forum = require('./forum.js')(pool);
-var thread = require('./thread.js')(pool);
-var post = require('./post.js')(pool);
-var user = require('./user.js')(pool);
+var forum = require('./forum.js')(pool, async);
+var thread = require('./thread.js')(pool, async);
+var post = require('./post.js')(pool, async);
+var user = require('./user.js')(pool, async);
 
 //routing
 var api_prefix = '';
