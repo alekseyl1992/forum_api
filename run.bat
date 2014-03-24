@@ -1,1 +1,1 @@
-node server.js
+coffee coffee/server.coffee

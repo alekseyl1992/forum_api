@@ -18,10 +18,11 @@ pool = mysql.createPool(
 )
 
 #modules
-forum = require("./forum.coffee")(pool, async)
-thread = require("./thread.coffee")(pool, async)
-post = require("./post.coffee")(pool, async)
-user = require("./user.coffee")(pool, async)
+util = require("./util.coffee")()
+forum = require("./forum.coffee")(pool, async, util)
+thread = require("./thread.coffee")(pool, async, util)
+post = require("./post.coffee")(pool, async, util)
+user = require("./user.coffee")(pool, async, util)
 
 #routing
 api_prefix = ""

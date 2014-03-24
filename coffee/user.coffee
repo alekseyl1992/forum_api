@@ -1,12 +1,12 @@
-module.exports = (pool, async) ->
-  datasetToJSON = (data) ->
-    JSON.stringify
-      code: 0
-      response: data
-
+module.exports = (pool, async, util) ->
   class User
     create: (req, res) ->
+      return if !util.require res, req.body, ["username", "about", "name", "email"]
+      util.optional req.body,
+        isAnonymous: false
+
       console.log req.body
+
       pool.query "insert into user
                   (username, about, name, email, isAnonymous)
                   values(?, ?, ?, ?, ?)",
@@ -15,13 +15,13 @@ module.exports = (pool, async) ->
         req.body.about
         req.body.name
         req.body.email
-        req.body.isAnonymous or false
+        req.body.isAnonymous
       ], (err) ->
         throw err  if err
         pool.query "select * from user where email = ?",
           [req.body.email], (err, rows) ->
           throw err  if err
-          res.send datasetToJSON(rows[0])
+          res.send util.datasetToJSON(rows[0])
 
 
     _details: (req, res, user, cb) =>
@@ -68,7 +68,7 @@ module.exports = (pool, async) ->
 
     details: (req, res) =>
       @_details(req, res, req.query.user,
-        (err, data) => res.send datasetToJSON(data));
+        (err, data) => res.send util.datasetToJSON(data));
 
 
     follow: (req, res) =>
@@ -100,7 +100,8 @@ module.exports = (pool, async) ->
         [req.query.user], (err, rows) =>
           throw err if err
           followers = (row.follower for row in rows)
-          async.mapSeries(followers, @_details, (err, results) -> res.send(datasetToJSON(results)))
+          async.mapSeries(followers, @_details, (err, results) ->
+            res.send(util.datasetToJSON(results)))
 
 
     listFollowing: (req, res) =>
@@ -118,7 +119,8 @@ module.exports = (pool, async) ->
         [req.query.user], (err, rows) =>
         throw err if err
         followees = (row.followee for row in rows)
-        async.mapSeries(followees, @_details, (err, results) -> res.send(datasetToJSON(results)))
+        async.mapSeries(followees, @_details, (err, results) ->
+          res.send(util.datasetToJSON(results)))
 
 
     listPosts: (req, res) ->
@@ -139,7 +141,7 @@ module.exports = (pool, async) ->
       pool.query query,
         [req.query.user], (err, rows) =>
           row.user = req.query.user from row in rows
-          res.send(datasetToJSON(rows))
+          res.send(util.datasetToJSON(rows))
 
 
     unfollow: (req, res) =>
