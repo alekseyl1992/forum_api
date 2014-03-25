@@ -1,10 +1,44 @@
-module.exports = (pool, async, util) ->
+module.exports = (pool, async, util, user) ->
   class Forum
     create: (req, res) ->
+      return if !util.require res, req.body, ["name", "short_name", "user"]
+
+      pool.query "insert into forum
+                  (name, short_name, user)
+                  values(?, ?, ?)",
+        [
+          req.body.name,
+          req.body.short_name,
+          req.body.user
+        ], (err, info) ->
+          throw err if err
+
+          data = req.body
+          data.id = info.insertId
+          res.send util.datasetToJSON(data)
 
     details: (req, res) ->
+      return if !util.require res, req.query, ["forum"]
+      util.optional req.query,
+        related: []
+
+      pool.query "select * from forum where short_name = ?",
+        [req.query.short_name], (err, rows) =>
+          throw err if err
+
+          if 'user' in req.query.related
+            user._details(req, res, (err, data) =>
+              rows.user = data
+              res.send datasetToJSON(rows))
+          else
+            res.send(rows)
 
     listPosts: (req, res) ->
+      return if !util.require res, req.query, ["forum"]
+      util.optional req.query,
+        related: []
+
+      # to join or not to join, that is the question
 
     listThreads: (req, res) ->
 

@@ -17,17 +17,17 @@ pool = mysql.createPool(
 
 #modules
 util = require("./util.coffee")()
-forum = require("./forum.coffee")(pool, async, util)
+user = require("./user.coffee")(pool, async, util)
+forum = require("./forum.coffee")(pool, async, util, user)
 thread = require("./thread.coffee")(pool, async, util)
 post = require("./post.coffee")(pool, async, util)
-user = require("./user.coffee")(pool, async, util)
 
 #routing
 api_prefix = ""
 app.get api_prefix + "/", (req, res) ->
   res.send "Welcome to forum_api!"
 
-app.get api_prefix + "/forum/create", forum.create
+app.post api_prefix + "/forum/create", forum.create
 app.get api_prefix + "/forum/details", forum.details
 app.get api_prefix + "/forum/listPosts", forum.listPosts
 app.get api_prefix + "/forum/listThreads", forum.listThreads

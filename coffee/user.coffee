@@ -5,8 +5,6 @@ module.exports = (pool, async, util) ->
       util.optional req.body,
         isAnonymous: false
 
-      console.log req.body
-
       pool.query "insert into user
                   (username, about, name, email, isAnonymous)
                   values(?, ?, ?, ?, ?)",
@@ -16,7 +14,7 @@ module.exports = (pool, async, util) ->
         req.body.name
         req.body.email
         req.body.isAnonymous
-      ], (err) ->
+      ], (err, info) ->
         throw err  if err
         pool.query "select * from user where email = ?",
           [req.body.email], (err, rows) ->
