@@ -6,7 +6,9 @@
   "dependencies": {
     "express": "~3.5.0",
     "async": "~0.2.10",
-    "mysql": "~2.1.1"
+    "mysql": "~2.1.1",
+    "coffee": "0.0.1",
+    "coffee-script": "^1.7.1"
   },
   "devDependencies": {},
   "scripts": {

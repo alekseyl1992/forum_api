@@ -1,14 +1,17 @@
-module.exports = (pool) ->
-  create: (req, res) ->
+module.exports = (pool, async, util) ->
+  class Post
+    create: (req, res) ->
 
-  details: (req, res) ->
+    details: (req, res) ->
 
-  list: (req, res) ->
+    list: (req, res) ->
 
-  remove: (req, res) ->
+    remove: (req, res) ->
 
-  restore: (req, res) ->
+    restore: (req, res) ->
 
-  update: (req, res) ->
+    update: (req, res) ->
 
-  vote: (req, res) ->
+    vote: (req, res) ->
+
+  return new Post()

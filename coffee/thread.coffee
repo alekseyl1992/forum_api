@@ -1,24 +1,27 @@
-module.exports = (pool) ->
-  close: (req, res) ->
+module.exports = (pool, async, util) ->
+  class Thread
+    close: (req, res) ->
 
-  create: (req, res) ->
+    create: (req, res) ->
 
-  details: (req, res) ->
+    details: (req, res) ->
 
-  list: (req, res) ->
+    list: (req, res) ->
 
-  listPosts: (req, res) ->
+    listPosts: (req, res) ->
 
-  open: (req, res) ->
+    open: (req, res) ->
 
-  remove: (req, res) ->
+    remove: (req, res) ->
 
-  restore: (req, res) ->
+    restore: (req, res) ->
 
-  subscribe: (req, res) ->
+    subscribe: (req, res) ->
 
-  unsubscribe: (req, res) ->
+    unsubscribe: (req, res) ->
 
-  update: (req, res) ->
+    update: (req, res) ->
 
-  vote: (req, res) ->
+    vote: (req, res) ->
+
+  return new Thread()

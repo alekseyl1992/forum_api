@@ -4,9 +4,7 @@ app = express()
 async = require("async")
 app.use express.logger("dev") # выводим все запросы со статусами в консоль
 app.use express.bodyParser() # стандартный модуль, для парсинга JSON в запросах
-app.use express.methodOverride() # поддержка put и delete
 app.use app.router # модуль для простого задания обработчиков путей
-app.use express.static(path.join(__dirname, "public")) # запуск статического файлового сервера, который смотрит на папку public/ (в нашем случае отдает index.html)
 
 #mysql configuration
 mysql = require("mysql")
@@ -27,12 +25,7 @@ user = require("./user.coffee")(pool, async, util)
 #routing
 api_prefix = ""
 app.get api_prefix + "/", (req, res) ->
-  pool.query "SELECT 1 + 1 AS solution", (err, rows, fields) ->
-    throw err  if err
-    res.send "The solution is: " + rows[0].solution
-    return
-
-  return
+  res.send "Welcome to forum_api!"
 
 app.get api_prefix + "/forum/create", forum.create
 app.get api_prefix + "/forum/details", forum.details
@@ -72,4 +65,3 @@ app.post api_prefix + "/user/updateProfile", user.updateProfile
 http_port = 8084
 app.listen http_port, ->
   console.log "Express server listening on port " + http_port
-  return
