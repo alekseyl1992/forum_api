@@ -15,11 +15,12 @@ module.exports = (pool, async, util) ->
         req.body.email
         req.body.isAnonymous
       ], (err, info) ->
-        throw err  if err
+        throw err if err and err != "ER_DUP_ENTRY"
+
         pool.query "select * from user where email = ?",
           [req.body.email], (err, rows) ->
-          throw err  if err
-          res.send util.datasetToJSON(rows[0])
+            throw err  if err
+            res.send util.datasetToJSON(rows[0])
 
 
     _details: (req, res, user, cb) =>

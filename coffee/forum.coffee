@@ -11,7 +11,7 @@ module.exports = (pool, async, util, user) ->
           req.body.short_name,
           req.body.user
         ], (err, info) ->
-          throw err if err
+          throw err if err and err != "ER_DUP_ENTRY"
 
           data = req.body
           data.id = info.insertId
