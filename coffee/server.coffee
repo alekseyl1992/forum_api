@@ -19,7 +19,7 @@ pool = mysql.createPool(
 util = require("./util.coffee")()
 user = require("./user.coffee")(pool, async, util)
 forum = require("./forum.coffee")(pool, async, util, user)
-thread = require("./thread.coffee")(pool, async, util)
+thread = require("./thread.coffee")(pool, async, util, user, forum)
 post = require("./post.coffee")(pool, async, util)
 
 #routing
@@ -33,24 +33,24 @@ app.get api_prefix + "/forum/listPosts", forum.listPosts
 app.get api_prefix + "/forum/listThreads", forum.listThreads
 app.get api_prefix + "/forum/listUsers", forum.listUsers
 
-app.get api_prefix + "/thread/close", thread.close
-app.get api_prefix + "/thread/create", thread.create
+app.post api_prefix + "/thread/close", thread.close
+app.post api_prefix + "/thread/create", thread.create
 app.get api_prefix + "/thread/details", thread.details
 app.get api_prefix + "/thread/list", thread.list
 app.get api_prefix + "/thread/listPosts", thread.listPosts
-app.get api_prefix + "/thread/open", thread.open
-app.get api_prefix + "/thread/subscribe", thread.subscribe
-app.get api_prefix + "/thread/unsubscribe", thread.unsubscribe
-app.get api_prefix + "/thread/update", thread.update
-app.get api_prefix + "/thread/vote", thread.vote
+app.post api_prefix + "/thread/open", thread.open
+app.post api_prefix + "/thread/subscribe", thread.subscribe
+app.post api_prefix + "/thread/unsubscribe", thread.unsubscribe
+app.post api_prefix + "/thread/update", thread.update
+app.post api_prefix + "/thread/vote", thread.vote
 
-app.get api_prefix + "/post/create", post.create
+app.post api_prefix + "/post/create", post.create
 app.get api_prefix + "/post/details", post.details
 app.get api_prefix + "/post/list", post.list
-app.get api_prefix + "/post/remove", post.remove
-app.get api_prefix + "/post/restore", post.restore
-app.get api_prefix + "/post/update", post.update
-app.get api_prefix + "/post/vote", post.vote
+app.post api_prefix + "/post/remove", post.remove
+app.post api_prefix + "/post/restore", post.restore
+app.post api_prefix + "/post/update", post.update
+app.post api_prefix + "/post/vote", post.vote
 
 app.post api_prefix + "/user/create", user.create
 app.get api_prefix + "/user/details", user.details

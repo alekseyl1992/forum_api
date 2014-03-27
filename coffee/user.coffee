@@ -17,18 +17,24 @@ module.exports = (pool, async, util) ->
       ], (err, info) ->
         throw err if err and err != "ER_DUP_ENTRY"
 
-        pool.query "select * from user where email = ?",
-          [req.body.email], (err, rows) ->
-            throw err  if err
-            res.send util.datasetToJSON(rows[0])
+        res.send util.datasetToJSON(req.body)
 
+    _getId: (email, cb) =>
+      pool.query "select id from user where email = ?",
+        [req.body.user], (err, rows) =>
+        if err || rows.length == 0
+          errMessage = "Unable to get userId"
+          util.sendError(res, errMessage)
+          cb errMessage, null
+        else
+          cb null, rows[0].id
 
     _details: (req, res, user, cb) =>
       pool.query "select * from user where email = ?",
         [user], (err, rows) ->
           throw err if err
           if rows.length is 0
-            res.status(404).send "User not found"
+            util.sendError(res, "User not found")
             return
 
           userId = rows[0].id
@@ -104,7 +110,7 @@ module.exports = (pool, async, util) ->
 
 
     listFollowing: (req, res) =>
-      query = "select followee from follow where followerfollower = ?
+      query = "select followee from follow where follower = ?
                 join user on user.email = follow.follower
                 order by name"
       if req.query.order?
