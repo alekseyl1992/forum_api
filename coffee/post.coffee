@@ -37,7 +37,7 @@ module.exports = (pool, async, util) ->
 
           data = req.body
           data.id = info.insertId
-          res.send util.datasetToJSON(data)
+          util.send res, data
 
 
     _details: (req, res) ->
@@ -56,7 +56,7 @@ module.exports = (pool, async, util) ->
           if err
             util.sendError(res, "Unable to remove post")
 
-          res.send util.datasetToJSON(post: req.body.post)
+          util.send res, data
 
 
     restore: (req, res) ->
@@ -69,7 +69,7 @@ module.exports = (pool, async, util) ->
           if err
             util.sendError(res, "Unable to restore post")
 
-          res.send util.datasetToJSON(post: req.body.post)
+          util.send res, {post: req.body.post}
 
     update: (req, res) =>
       return if !util.require res, req.body, ["post", "message"]

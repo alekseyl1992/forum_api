@@ -15,7 +15,7 @@ module.exports = (pool, async, util, user) ->
 
           data = req.body
           data.id = info.insertId
-          res.send util.datasetToJSON(data)
+          util.send res, data
 
     details: (req, res) ->
       return if !util.require res, req.query, ["forum"]
@@ -27,11 +27,11 @@ module.exports = (pool, async, util, user) ->
           throw err if err
 
           if 'user' in req.query.related
-            user._details(req, res, (err, data) =>
+            user._details req, res, (err, data) =>
               rows.user = data
-              res.send datasetToJSON(rows))
+              util.send res, rows
           else
-            res.send(rows)
+            util.send res, rows
 
     listPosts: (req, res) ->
       return if !util.require res, req.query, ["forum"]

@@ -1,22 +1,21 @@
 module.exports = (pool, async, util, user, forum) ->
   class Thread
-    # todo: not done yet
     create: (req, res) ->
       return if !util.require res, req.body, ["forum", "title", "isClosed", "user", "date", "message", "slug"]
       util.optional req.body,
         isDeleted: false
 
         async.parallel
-          userId: (cb) -> user._getId req.body.user, cb,
-          forumId: (cb) -> forum._getId req.body.forum, cb
+          userId: (cb) -> user._getId res, req.body.user, cb
+          forumId: (cb) -> forum._getId res, req.body.forum, cb
         , actualCreate
 
 
       actualCreate = (err, data) =>
         pool.query "insert into thread
-                            (title, slug, date, isClosed, isDeleted,
-                              message, user, likes, dislikes, forum_id, user_id)
-                            values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (title, slug, date, isClosed, isDeleted,
+                      message, user, likes, dislikes, forum_id, user_id)
+                    values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           req.body.title,
           req.body.slug,
@@ -36,14 +35,14 @@ module.exports = (pool, async, util, user, forum) ->
 
         data = req.body
         data.id = info.insertId
-        res.send util.datasetToJSON(data)
+        util.send res, data
 
     _details: (req, res, cb) ->
 
 
     details: (req, res) =>
       @_details req, res, (err, data) =>
-        res.send util.datasetToJSON(data)
+        util.send res, data
 
     list: (req, res) ->
 
@@ -58,7 +57,7 @@ module.exports = (pool, async, util, user, forum) ->
         if err
           util.sendError(res, "Unable to set " + flag + " to " + to + "for thread")
 
-        res.send util.datasetToJSON(thread: req.body.thread)
+        util.send res, {thread: req.body.thread}
 
     open: (req, res) =>
       @_setFlag(req, res, "isClosed", 0);
@@ -76,15 +75,15 @@ module.exports = (pool, async, util, user, forum) ->
     subscribe: (req, res) =>
       return if !util.require res, req.body, ["thread", "user"]
 
-        user._getId req.body.user, (err, userId) =>
-          return if err
-          pool.query "insert into subscribtion (user_id, thread_id) values (?, ?)",
-            [userId, req.body.thread], (err, info) =>
-              if err
-                util.sendError(res, "Unable to subscribe") # todo: composite unique?
-                return
+      user._getId req.body.user, (err, userId) =>
+        return if err
+        pool.query "insert into subscribtion (user_id, thread_id) values (?, ?)",
+          [userId, req.body.thread], (err, info) =>
+            if err
+              util.sendError(res, "Unable to subscribe") # todo: composite unique?
+              return
 
-              res.send util.datasetToJSON(req.body)
+            util.send res, req.body
 
 
     unsubscribe: (req, res) =>
@@ -99,7 +98,7 @@ module.exports = (pool, async, util, user, forum) ->
                 util.sendError(res, "Unable to unsubscribe") # todo: composite unique?
                 return
 
-                res.send util.datasetToJSON(req.body)
+                util.send res, req.body
 
     update: (req, res) =>
       return if !util.require res, req.body, ["message", "slug", "thread"]
@@ -111,7 +110,7 @@ module.exports = (pool, async, util, user, forum) ->
             util.sendError(res, "Unable to update thread")
             return
           @_details res, req, (err, data) =>
-            res.send util.datasetToJSON(data)
+            util.send res, data
 
     vote: (req, res) =>
       return if !util.require res, req.body, ["vote", "thread"]
@@ -128,10 +127,10 @@ module.exports = (pool, async, util, user, forum) ->
           [req.body.thread],
           (err, info) =>
             if err
-              util.sendError(res, "unable to vote for thread")
+              util.sendError(res, "Unable to vote for thread")
               return
 
             @_details res, req, (err, data) =>
-              res.send util.datasetToJSON(data)
+              util.send res, data
 
   return new Thread()

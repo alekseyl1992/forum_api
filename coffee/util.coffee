@@ -1,12 +1,12 @@
 module.exports = () ->
   class Util
-    datasetToJSON: (data) ->
-      JSON.stringify
+    send: (res, data) ->
+      res.json
         code: 0
         response: data
 
     sendError: (res, errorMessage) ->
-      res.send JSON.stringify
+      res.json
         code: 1
         response: errorMessage
 

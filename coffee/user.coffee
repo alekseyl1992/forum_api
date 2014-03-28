@@ -17,9 +17,9 @@ module.exports = (pool, async, util) ->
       ], (err, info) ->
         throw err if err and err != "ER_DUP_ENTRY"
 
-        res.send util.datasetToJSON(req.body)
+        util.send res, req.body
 
-    _getId: (email, cb) =>
+    _getId: (res, email, cb) =>
       pool.query "select id from user where email = ?",
         [req.body.user], (err, rows) =>
         if err || rows.length == 0
@@ -72,8 +72,8 @@ module.exports = (pool, async, util) ->
             cb null, data
 
     details: (req, res) =>
-      @_details(req, res, req.query.user,
-        (err, data) => res.send util.datasetToJSON(data));
+      @_details req, res, req.query.user,
+        (err, data) => util.send res, data
 
 
     follow: (req, res) =>
@@ -105,8 +105,9 @@ module.exports = (pool, async, util) ->
         [req.query.user], (err, rows) =>
           throw err if err
           followers = (row.follower for row in rows)
-          async.mapSeries(followers, @_details, (err, results) ->
-            res.send(util.datasetToJSON(results)))
+          async.mapSeries followers, @_details,
+            (err, results) ->
+              util.send res, results
 
 
     listFollowing: (req, res) =>
@@ -124,8 +125,8 @@ module.exports = (pool, async, util) ->
         [req.query.user], (err, rows) =>
         throw err if err
         followees = (row.followee for row in rows)
-        async.mapSeries(followees, @_details, (err, results) ->
-          res.send(util.datasetToJSON(results)))
+        async.mapSeries followees, @_details, (err, results) ->
+          util.send res, results
 
 
     listPosts: (req, res) ->
@@ -145,8 +146,8 @@ module.exports = (pool, async, util) ->
 
       pool.query query,
         [req.query.user], (err, rows) =>
-          row.user = req.query.user from row in rows
-          res.send(util.datasetToJSON(rows))
+          row.user = req.query.user for row in rows
+          util.send res, rows
 
 
     unfollow: (req, res) =>
@@ -156,11 +157,11 @@ module.exports = (pool, async, util) ->
           req.query = {user: req.body.follower}
           @details req, res
 
-    updateProfile: (req, res) ->
+    updateProfile: (req, res) =>
       pool.query "update user set name = ?, about = ? where email = ?",
         [req.body.name, req.body.about, req.body.user], (err, rows) =>
-          throw err if err
-          req.query = {user: req.body.user}
-          @details req, res
+            throw err if err
+            req.query = {user: req.body.user}
+            @details req, res
 
   return new User
