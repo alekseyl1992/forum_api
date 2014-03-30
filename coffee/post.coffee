@@ -1,7 +1,5 @@
-module.exports = (pool, async, util) ->
+module.exports = (pool, async, util, modules) ->
   class Post
-
-    # todo: not done yet
     create: (req, res) ->
       return if !util.require res, req.body, ["date", "thread", "message", "user", "forum"]
       util.optional req.body,
@@ -12,18 +10,14 @@ module.exports = (pool, async, util) ->
         isSpam: false,
         isDeleted: false
 
-      # get thread and forum id
-      threadId = 0
-      forumId = 0
-
       pool.query "insert into post
-                  (date, thread_id, forum_id, message, user,
+                  (date, thread_id, forum, message, user,
                     parent_id, isApproved, isHighlighted, isEdited, isSpam, isDeleted)
                   values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           req.body.date,
-          forumId,
-          threadId,
+          req.body.forum,
+          req.body.thread,
           req.body.message,
           req.body.user,
           req.body.parent,
@@ -40,11 +34,83 @@ module.exports = (pool, async, util) ->
           util.send res, data
 
 
-    _details: (req, res) ->
+    _details: (req, res, cb) ->
+      return if !util.require res, req.query, ["post"]
+      util.optional req.body,
+        related: []
 
-    details: (req, res) ->
+      pool.query "select * from post where id = ?",
+        [req.query.post], (err, rows) =>
+          if err
+            cb err, null
+            return
+
+          if rows.length == 0
+            util.sendError(res, "No such post")
+            return
+
+          postData = rows[0]
+
+          if req.query.related.length == 0
+            cb null, postData
+            return
+
+          relatedTasks = {}
+          if "thread" in req.query.related
+            relatedTasks.thread = (cb) =>
+              modules.thread._details req, res, cb
+          if "forum" in req.query.related
+            relatedTasks.forum = (cb) =>
+              modules.forum._details req, res, cb
+          if "user" in req.query.related
+            relatedTasks.user = (cb) =>
+              modules.user._details req, res, cb
+
+          async.parallel relatedTasks, (err, data) =>
+            if err
+              cb err, null
+              return
+
+            postData.thread = data.thread if data.thread?
+            postData.forum = data.forum if data.forum?
+            postData.user = data.user if data.user?
+
+            cb null, postData
+
+
+    details: (req, res) =>
+      @_details req, res, (err, data) =>
+        util.send data
 
     list: (req, res) ->
+      if req.query.forum?
+        selector = "forum"
+        value = req.query.forum
+      else if req.query.thread?
+        selector = "thread"
+        value = req.query.thread
+      else
+        util.sendError res, "Forum and thread not specified"
+        return
+
+      query = "select * from post where " + selector + " = ?"
+      if req.query.since?
+        query += " and date >= " + req.query.since
+
+      query += " order by date"
+      if req.query.order?
+        query += " " + req.query.order
+
+      if req.query.limit?
+        query += " limit " + req.query.limit
+
+      pool.query query, [value], (err, rows) =>
+        if err
+          util.sendError res, "Unable to list posts"
+          return
+
+        util.send res, rows
+
 
     remove: (req, res) ->
       return if !util.require res, req.body, ["post"]
@@ -83,6 +149,25 @@ module.exports = (pool, async, util) ->
 
           @_details(res, req, req.body.post)
 
-    vote: (req, res) ->
+    vote: (req, res) =>
+      return if !util.require res, req.body, ["post", "vote"]
+
+      if req.body.vote == "1"
+        query = "update post set likes = likes + 1"
+      else if req.body.vote == "-1"
+        query = "update post set dislikes = dislikes + 1"
+      else
+        util.sendError(res, "vote value should be either -1 or 1")
+        return
+
+        pool.query query + " where id = ?",
+          [req.body.post],
+        (err, info) =>
+          if err
+            util.sendError(res, "Unable to vote for post")
+            return
+
+          @_details res, req, (err, data) =>
+            util.send res, data
 
   return new Post()

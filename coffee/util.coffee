@@ -12,14 +12,14 @@ module.exports = () ->
 
     require: (res, args, required) =>
       for arg in required
-        if !args[arg]?
+        if !(args[arg]?)
           @sendError res, "Not enough arguments"
           return false
       return true
 
     optional: (args, opts) =>
-      for arg in opts
-        if !args[arg]?
+      for arg of opts
+        if !(args[arg]?)
           args[arg] = opts[arg]
 
 

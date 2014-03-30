@@ -30,6 +30,8 @@ module.exports = (pool, async, util) ->
           cb null, rows[0].id
 
     _details: (req, res, user, cb) =>
+      cb = cb || ->
+
       pool.query "select * from user where email = ?",
         [user], (err, rows) ->
           throw err if err
@@ -44,30 +46,30 @@ module.exports = (pool, async, util) ->
           following = []
           async.parallel [
             (callback) ->
-              pool.query "select thread_id from subscription where user_id = ?",
-                [userId], (err, rows) ->
-                throw err if err
-                subscriptions = (row.thread_id for row in rows)
-                callback null, null
+              pool.query "select thread_id from subscription where user = ?",
+                [user], (err, rows) ->
+                  throw err if err
+                  subscriptions = (row.thread_id for row in rows)
+                  callback null, null
 
             (callback) ->
               pool.query "select follower from follow where followee = ?",
                 [email], (err, rows) ->
-                throw err if err
-                followers = (row.follower for row in rows)
-                callback null, null
+                  throw err if err
+                  followers = (row.follower for row in rows)
+                  callback null, null
 
             (callback) ->
               pool.query "select followee from follow where follower = ?",
                 [email], (err, rows) ->
-                throw err if err
-                following = (row.followee for row in rows)
-                callback null, null
+                  throw err if err
+                  following = (row.followee for row in rows)
+                  callback null, null
           ], ->
             data = rows[0]
-            data.subscriptions = subscriptions
-            data.followers = followers
-            data.following = following
+            data.subscriptions = subscriptions || []
+            data.followers = followers || []
+            data.following = following || []
 
             cb null, data
 
@@ -77,6 +79,8 @@ module.exports = (pool, async, util) ->
 
 
     follow: (req, res) =>
+      return if !util.require res, req.body, ["follower", "followee"]
+
       pool.query "select count(*) from follow where follower = ? and followee = ?",
         [req.body.follower, req.body.followee], (err, rows) =>
           if rows.length is not 0
@@ -91,47 +95,56 @@ module.exports = (pool, async, util) ->
 
 
     listFollowers: (req, res) =>
-      query = "select follower from follow where followee = ?
+      return if !util.require res, req.query, ["user"]
+
+      query = "select follower from follow
               join user on user.email = follow.follower
+              where followee = ?
               order by name"
       if req.query.order?
         query += " " + req.query.order
       if req.query.since_id?
         query += " " + "offset " + req.query.since_id
       if req.query.limit?
-        query += " " + "limit" + req.query.limit
+        query += " " + "limit " + req.query.limit
 
       pool.query query,
         [req.query.user], (err, rows) =>
           throw err if err
           followers = (row.follower for row in rows)
-          async.mapSeries followers, @_details,
+          async.mapSeries followers, ((follower, cb) => @_details(req, res, follower, cb)),
             (err, results) ->
               util.send res, results
 
 
     listFollowing: (req, res) =>
-      query = "select followee from follow where follower = ?
+      return if !util.require res, req.query, ["user"]
+
+      query = "select followee from follow
                 join user on user.email = follow.follower
+                where follower = ?
                 order by name"
       if req.query.order?
         query += " " + req.query.order
       if req.query.since_id?
         query += " " + "offset " + req.query.since_id
       if req.query.limit?
-        query += " " + "limit" + req.query.limit
+        query += " " + "limit " + req.query.limit
 
       pool.query query,
         [req.query.user], (err, rows) =>
-        throw err if err
-        followees = (row.followee for row in rows)
-        async.mapSeries followees, @_details, (err, results) ->
-          util.send res, results
+          throw err if err
+          followees = (row.followee for row in rows)
+          async.mapSeries followees, ((followee, cb) => @_details(req, res, followee, cb)),
+            (err, results) ->
+              util.send res, results
 
 
     listPosts: (req, res) ->
+      return if !util.require res, req.query, ["user"]
+
       query = "select * from post
-                join user on user.id = post.user_id
+                join user on user.email = post.user
                 where user.email = ?"
 
       if req.query.since?
@@ -142,26 +155,43 @@ module.exports = (pool, async, util) ->
         query += " " + req.query.order
 
       if req.query.limit?
-        query += " " + "limit" + req.query.limit
+        query += " " + "limit " + req.query.limit
 
       pool.query query,
         [req.query.user], (err, rows) =>
+          if err
+            util.sendError("Unable to list user posts", err)
+            console.log(err)
+            return
+
           row.user = req.query.user for row in rows
           util.send res, rows
 
 
     unfollow: (req, res) =>
+      return if !util.require res, req.body, ["follower", "followee"]
+
       pool.query "delete from follow where follower = ? and followee = ? limit 1",
         [req.body.follower, req.body.followee], (err, rows) =>
-          throw err if err
+          if err
+            util.sendError("Unable to unfollow", err)
+            console.log(err)
+            return
+
           req.query = {user: req.body.follower}
           @details req, res
 
     updateProfile: (req, res) =>
+      return if !util.require res, req.body, ["about", "user", "name"]
+
       pool.query "update user set name = ?, about = ? where email = ?",
         [req.body.name, req.body.about, req.body.user], (err, rows) =>
-            throw err if err
-            req.query = {user: req.body.user}
-            @details req, res
+          if err
+            util.sendError("Unable to update profile", err)
+            console.log(err)
+            return
+
+          req.query = {user: req.body.user}
+          @details req, res
 
   return new User
