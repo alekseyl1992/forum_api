@@ -1,4 +1,7 @@
 module.exports = () ->
+  Array.prototype.remove = (o) ->
+    @splice @indexOf(o), 1
+
   class Util
     send: (res, data) ->
       res.json
@@ -21,6 +24,9 @@ module.exports = () ->
       for arg of opts
         if !(args[arg]?)
           args[arg] = opts[arg]
+        # wrap related in array
+        if arg == 'related' and args[arg] not instanceof Array
+          args[arg] = [args[arg]]
 
 
   return new Util()

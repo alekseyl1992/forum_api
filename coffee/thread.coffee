@@ -5,47 +5,44 @@ module.exports = (pool, async, util, modules) ->
       util.optional req.body,
         isDeleted: false
 
-        async.parallel
-          userId: (cb) -> user._getId res, req.body.user, cb
-          forumId: (cb) -> forum._getId res, req.body.forum, cb
-        , actualCreate
+        #async.parallel
+        #  userId: (cb) -> modules.user._getId res, req.body.user, cb
+        #  forumId: (cb) -> modules.forum._getId res, req.body.forum, cb
+        #, actualCreate
 
-
-      actualCreate = (err, data) =>
         pool.query "insert into thread
                     (title, slug, date, isClosed, isDeleted,
-                      message, user, likes, dislikes, forum_id, user_id)
-                    values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          req.body.title,
-          req.body.slug,
-          req.body.date,
-          req.body.isClosed,
-          req.body.isDeleted,
-          req.body.message,
-          req.body.user,
-          0, #likes
-          0, #dislikes
-          data.forumId,
-          data.userId
-        ], (err, info) ->
-        throw err if err and err != "ER_DUP_ENTRY"
-        if err == "ER_DUP_ENTRY"
-          util.sendError(res, "Duplicate entry (thread.slug)")
+                      message, likes, dislikes, forum, user)
+                    values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          [
+            req.body.title,
+            req.body.slug,
+            req.body.date,
+            req.body.isClosed,
+            req.body.isDeleted,
+            req.body.message,
+            0, #likes
+            0, #dislikes
+            req.body.forum,
+            req.body.user
+          ], (err, info) ->
+            throw err if err and err != "ER_DUP_ENTRY"
+            if err == "ER_DUP_ENTRY"
+              util.sendError(res, "Duplicate entry (thread.slug)")
 
-        data = req.body
-        data.id = info.insertId
-        util.send res, data
+            data = req.body
+            data.id = info.insertId
+            util.send res, data
 
     _details: (req, res, cb) ->
       return if !util.require res, req.query, ["thread"]
-      util.optional req.body,
+      util.optional req.query,
         related: []
 
       pool.query "select * from thread where id = ?",
         [req.query.thread], (err, rows) =>
           if err
-            cb err, null
+            util.sendError(res, err)
             return
 
           if rows.length == 0
@@ -59,16 +56,21 @@ module.exports = (pool, async, util, modules) ->
             return
 
           relatedTasks = {}
+          
           if "user" in req.query.related
+            req.query.related.remove("user") #prevent for futher detailing
+            req.query.user = postData.user
             relatedTasks.user = (cb) =>
-              modules.user._details req, res, cb
+              modules.user._details req, res, postData.user, cb #todo: whyyyy
           if "forum" in req.query.related
+            req.query.related.remove("user")
+            req.query.forum = postData.forum
             relatedTasks.forum = (cb) =>
               modules.forum._details req, res, cb
 
           async.parallel relatedTasks, (err, data) =>
             if err
-              cb err, null
+              util.sendError(res, err)
               return
 
             postData.forum = data.forum if data.forum?

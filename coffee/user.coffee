@@ -30,6 +30,7 @@ module.exports = (pool, async, util) ->
           cb null, rows[0].id
 
     _details: (req, res, user, cb) =>
+      return if !util.require res, req.query, ["user"]
       cb = cb || ->
 
       pool.query "select * from user where email = ?",

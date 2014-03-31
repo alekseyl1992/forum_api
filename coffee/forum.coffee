@@ -27,22 +27,27 @@ module.exports = (pool, async, util, modules) ->
           data.id = info.insertId
           util.send res, data
 
-    details: (req, res) ->
+    _details: (req, res, cb) ->
       return if !util.require res, req.query, ["forum"]
       util.optional req.query,
         related: []
 
       pool.query "select * from forum where short_name = ?",
-        [req.query.short_name], (err, rows) =>
-          throw err if err
+        [req.query.forum], (err, rows) =>
+          util.sendError res, err if err
 
-          console.log req.query.related
+          postData = rows[0]
           if 'user' in req.query.related
-            modules.user._details req, res, (err, data) =>
-              rows.user = data
-              util.send res, rows
+            req.query.user = postData.user
+            modules.user._details req, res, postData.user, (err, data) =>
+              postData.user = data
+              cb null, postData
           else
-            util.send res, rows
+            cb null, postData
+
+    details: (req, res) =>
+      @_details req, res, (err, rows) =>
+        util.send res, rows
 
     listPosts: (req, res) ->
       modules.post.list req, res
