@@ -100,14 +100,16 @@ module.exports = (pool, async, util) ->
 
       query = "select follower from follow
               join user on user.email = follow.follower
-              where followee = ?
-              order by name"
-      if req.query.order?
-        query += " " + req.query.order
+              where followee = ?"
+
       if req.query.since_id?
-        query += " " + "offset " + req.query.since_id
+        query += " " + " and id >= " + pool.escape(req.query.since_id)
+
+      query += " order by name"
+      if req.query.order?
+        query += " " + pool.escape(req.query.order)
       if req.query.limit?
-        query += " " + "limit " + req.query.limit
+        query += " " + "limit " + pool.escape(req.query.limit)
 
       pool.query query,
         [req.query.user], (err, rows) =>
@@ -123,14 +125,16 @@ module.exports = (pool, async, util) ->
 
       query = "select followee from follow
                 join user on user.email = follow.follower
-                where follower = ?
-                order by name"
-      if req.query.order?
-        query += " " + req.query.order
+                where follower = ?"
+
       if req.query.since_id?
-        query += " " + "offset " + req.query.since_id
+        query += " " + " and id >= " + pool.escape(req.query.since_id)
+
+      query += " order by name"
+      if req.query.order?
+        query += " " + pool.escape(req.query.order)
       if req.query.limit?
-        query += " " + "limit " + req.query.limit
+        query += " " + "limit " + pool.escape(req.query.limit)
 
       pool.query query,
         [req.query.user], (err, rows) =>
