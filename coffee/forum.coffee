@@ -21,7 +21,10 @@ module.exports = (pool, async, util, modules) ->
           req.body.short_name,
           req.body.user
         ], (err, info) ->
-          throw err if err and err != "ER_DUP_ENTRY"
+          if err and err != "ER_DUP_ENTRY"
+            util.sendError res, "Unable to create forum"
+            console.log(err)
+            return
 
           data = req.body
           data.id = info.insertId
@@ -34,7 +37,9 @@ module.exports = (pool, async, util, modules) ->
 
       pool.query "select * from forum where short_name = ?",
         [req.query.forum], (err, rows) =>
-          util.sendError res, err if err
+          if err
+            util.sendError res, err
+            return
 
           postData = rows[0]
           if 'user' in req.query.related
@@ -67,11 +72,13 @@ module.exports = (pool, async, util, modules) ->
         query += " offset " + req.query.since_id
 
       query += " order by post.date"
-      if req.query.order?
-        query += " " + req.query.order
+      if req.query.order == "asc"
+        query += " asc"
+      else if req.query.order == "desc"
+        query += " desc"
 
       if req.query.limit?
-        query += " limit " + req.query.limit
+        query += " limit " + parseInt(req.query.limit)
 
       pool.query query, [req.query.forum], (err, rows) =>
         if err

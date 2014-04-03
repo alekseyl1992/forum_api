@@ -36,6 +36,8 @@ app.get api_prefix + "/forum/listThreads", forum.listThreads
 app.get api_prefix + "/forum/listUsers", forum.listUsers
 
 app.post api_prefix + "/thread/close", thread.close
+app.post api_prefix + "/thread/remove", thread.remove
+app.post api_prefix + "/thread/restore", thread.restore
 app.post api_prefix + "/thread/create", thread.create
 app.get api_prefix + "/thread/details", thread.details
 app.get api_prefix + "/thread/list", thread.list

@@ -1,9 +1,12 @@
 module.exports = (pool, async, util) ->
   class User
     create: (req, res) ->
-      return if !util.require res, req.body, ["username", "about", "name", "email"]
+      return if !util.require res, req.body, ["email"]
       util.optional req.body,
-        isAnonymous: false
+        isAnonymous: false,
+        name: null,
+        username: null,
+        about: null
 
       pool.query "insert into user
                   (username, about, name, email, isAnonymous)
@@ -15,7 +18,10 @@ module.exports = (pool, async, util) ->
         req.body.email
         req.body.isAnonymous
       ], (err, info) ->
-        throw err if err and err != "ER_DUP_ENTRY"
+        if err and err != "ER_DUP_ENTRY"
+          util.sendError res, "Unable to create user"
+          console.log(err)
+          return
 
         util.send res, req.body
 
@@ -106,10 +112,13 @@ module.exports = (pool, async, util) ->
         query += " " + " and id >= " + pool.escape(req.query.since_id)
 
       query += " order by name"
-      if req.query.order?
-        query += " " + pool.escape(req.query.order)
+      if req.query.order == "asc"
+        query += " asc"
+      else if req.query.order == "desc"
+        query += " desc"
+
       if req.query.limit?
-        query += " " + "limit " + pool.escape(req.query.limit)
+        query += " limit " + parseInt(req.query.limit)
 
       pool.query query,
         [req.query.user], (err, rows) =>
@@ -131,10 +140,13 @@ module.exports = (pool, async, util) ->
         query += " " + " and id >= " + pool.escape(req.query.since_id)
 
       query += " order by name"
-      if req.query.order?
-        query += " " + pool.escape(req.query.order)
+      if req.query.order == "asc"
+        query += " asc"
+      else if req.query.order == "desc"
+        query += " desc"
+
       if req.query.limit?
-        query += " " + "limit " + pool.escape(req.query.limit)
+        query += " limit " + parseInt(req.query.limit)
 
       pool.query query,
         [req.query.user], (err, rows) =>

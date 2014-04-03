@@ -26,9 +26,13 @@ module.exports = (pool, async, util, modules) ->
             req.body.forum,
             req.body.user
           ], (err, info) ->
-            throw err if err and err != "ER_DUP_ENTRY"
+            if err and err != "ER_DUP_ENTRY"
+              util.sendError res, "Unable to create thread"
+              console.log(err)
+              return
             if err == "ER_DUP_ENTRY"
               util.sendError(res, "Duplicate entry (thread.slug)")
+              return
 
             data = req.body
             data.id = info.insertId
@@ -98,11 +102,13 @@ module.exports = (pool, async, util, modules) ->
         query += " and date >= " + pool.escape(req.query.since)
 
       query += " order by date"
-      if req.query.order?
-        query += " " + pool.escape(req.query.order)
+      if req.query.order == "asc"
+        query += " asc"
+      else if req.query.order == "desc"
+        query += " desc"
 
       if req.query.limit?
-        query += " limit " + pool.escape(req.query.limit)
+        query += " limit " + parseInt(req.query.limit)
 
       pool.query query, [value], (err, rows) =>
         if err
@@ -120,12 +126,12 @@ module.exports = (pool, async, util, modules) ->
 
       pool.query "update thread set " + flag + " = " + to + " where id = ?",
         [req.body.thread],
-      (err, info) =>
-        if err
-          util.sendError(res, "Unable to set " + flag + " to " + to + "for thread")
-          console.log(err)
+        (err, info) =>
+          if err
+            util.sendError(res, "Unable to set " + flag + " to " + to + "for thread")
+            console.log(err)
 
-        util.send res, {thread: req.body.thread}
+          util.send res, {thread: req.body.thread}
 
     open: (req, res) =>
       @_setFlag(req, res, "isClosed", 0);
@@ -143,10 +149,11 @@ module.exports = (pool, async, util, modules) ->
     subscribe: (req, res) =>
       return if !util.require res, req.body, ["thread", "user"]
 
-      pool.query "insert into subscribtion (user, thread_id) values (?, ?)",
+      pool.query "insert into subscription (user, thread) values (?, ?)",
         [req.body.user, req.body.thread], (err, info) =>
           if err
-            util.sendError(res, "Unable to subscribe") # todo: composite unique?
+            util.sendError(res, "Unable to subscribe")
+            console.log(err)
             return
 
           util.send res, req.body
@@ -155,45 +162,51 @@ module.exports = (pool, async, util, modules) ->
     unsubscribe: (req, res) =>
       return if !util.require res, req.body, ["thread", "user"]
 
-      pool.query "delete from subscribtion where user_id = ? and thread_id = ?",
+      pool.query "delete from subscription where user = ? and thread = ?",
         [req.body.user, req.body.thread], (err, info) =>
           if err
             util.sendError(res, "Unable to unsubscribe")
+            console.log(err)
             return
 
-            util.send res, req.body
+          util.send res, req.body
 
     update: (req, res) =>
       return if !util.require res, req.body, ["message", "slug", "thread"]
 
-      pool.query "update thread set message = ?, slug = ?, where id = ?",
-        [res.body.message, res.body.slug, res.body.thread],
+      pool.query "update thread set message = ?, slug = ? where id = ?",
+        [req.body.message, req.body.slug, req.body.thread],
         (err, info) =>
           if err
             util.sendError(res, "Unable to update thread")
+            console.log(err)
             return
-          @_details res, req, (err, data) =>
+
+          req.query = {threa: req.body.thread}
+          @_details req, res, (err, data) =>
             util.send res, data
 
     vote: (req, res) =>
       return if !util.require res, req.body, ["vote", "thread"]
 
-      if req.body.vote == "1"
+      if req.body.vote == 1
         query = "update thread set likes = likes + 1"
-      else if req.body.vote == "-1"
+      else if req.body.vote == -1
         query = "update thread set dislikes = dislikes + 1"
       else
         util.sendError(res, "vote value should be either -1 or 1")
         return
 
-        pool.query query + " where id = ?",
-          [req.body.thread],
-          (err, info) =>
-            if err
-              util.sendError(res, "Unable to vote for thread")
-              return
+      pool.query query + " where id = ?",
+        [req.body.thread],
+        (err, info) =>
+          if err
+            util.sendError(res, "Unable to vote for thread")
+            console.log(err)
+            return
 
-            @_details res, req, (err, data) =>
-              util.send res, data
+          req.query = {thread: req.body.thread}
+          @_details req, res, (err, data) =>
+            util.send res, data
 
   return new Thread()
