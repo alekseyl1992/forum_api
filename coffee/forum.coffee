@@ -71,7 +71,7 @@ module.exports = (pool, async, util, modules) ->
       if req.query.since_id?
         query += " offset " + req.query.since_id
 
-      query += " order by post.date"
+      query += " order by user.id"
       if req.query.order == "asc"
         query += " asc"
       else if req.query.order == "desc"
