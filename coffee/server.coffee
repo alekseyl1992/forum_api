@@ -13,6 +13,7 @@ pool = mysql.createPool(
   database: "forum_api"
   user: "forum_api_user"
   password: "forum_api_pswd"
+  dateStrings: true
 )
 
 #modules

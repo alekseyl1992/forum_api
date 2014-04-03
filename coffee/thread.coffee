@@ -86,7 +86,7 @@ module.exports = (pool, async, util, modules) ->
       if req.query.forum?
         selector = "forum"
         value = req.query.forum
-      else if req.query.thread?
+      else if req.query.user?
         selector = "user"
         value = req.query.user
       else
@@ -95,18 +95,19 @@ module.exports = (pool, async, util, modules) ->
 
       query = "select * from thread where " + selector + " = ?"
       if req.query.since?
-        query += " and date >= " + req.query.since
+        query += " and date >= " + pool.escape(req.query.since)
 
       query += " order by date"
       if req.query.order?
-        query += " " + req.query.order
+        query += " " + pool.escape(req.query.order)
 
       if req.query.limit?
-        query += " limit " + req.query.limit
+        query += " limit " + pool.escape(req.query.limit)
 
       pool.query query, [value], (err, rows) =>
         if err
           util.sendError res, "Unable to list threads"
+          console.log(err)
           return
 
         util.send res, rows
@@ -122,6 +123,7 @@ module.exports = (pool, async, util, modules) ->
       (err, info) =>
         if err
           util.sendError(res, "Unable to set " + flag + " to " + to + "for thread")
+          console.log(err)
 
         util.send res, {thread: req.body.thread}
 
