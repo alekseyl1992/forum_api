@@ -12,7 +12,7 @@ module.exports = (pool, async, util, modules) ->
 
       pool.query "insert into post
                   (date, thread, forum, message, user,
-                    parent_id, isApproved, isHighlighted, isEdited, isSpam, isDeleted, likes, dislikes)
+                    parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted, likes, dislikes)
                   values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           req.body.date,
@@ -120,7 +120,6 @@ module.exports = (pool, async, util, modules) ->
       if req.query.limit?
         query += " limit " + parseInt(req.query.limit)
 
-      console.log(query)
       pool.query query, [value], (err, rows) =>
         if err
           util.sendError res, "Unable to list posts"

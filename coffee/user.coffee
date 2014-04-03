@@ -23,6 +23,7 @@ module.exports = (pool, async, util) ->
           console.log(err)
           return
 
+        req.body.id = info.insertId
         util.send res, req.body
 
     _getId: (res, email, cb) =>

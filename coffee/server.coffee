@@ -25,7 +25,7 @@ thread= modules.thread= require("./thread.coffee")(pool, async, util, modules)
 post  = modules.post  = require("./post.coffee")(pool, async, util, modules)
 
 #routing
-api_prefix = ""
+api_prefix = "/alekseyl"
 app.get api_prefix + "/", (req, res) ->
   res.send "Welcome to forum_api!"
 
