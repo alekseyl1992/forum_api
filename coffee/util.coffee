@@ -26,7 +26,10 @@ module.exports = () ->
           args[arg] = opts[arg]
         # wrap related in array
         if arg == 'related' and args[arg] not instanceof Array
-          args[arg] = [args[arg]]
+          try
+            args[arg] = JSON.parse(args[arg].replace(/'/g, "\""))
+          catch err
+            args[arg] = [args[arg]]
 
 
   return new Util()
