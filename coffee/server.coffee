@@ -25,7 +25,7 @@ thread= modules.thread= require("./thread.coffee")(pool, async, util, modules)
 post  = modules.post  = require("./post.coffee")(pool, async, util, modules)
 
 #routing
-api_prefix = "/alekseyl"
+api_prefix = "/db/api"
 app.get api_prefix + "/", (req, res) ->
   res.send "Welcome to forum_api!"
 
@@ -66,6 +66,6 @@ app.post api_prefix + "/user/unfollow", user.unfollow
 app.post api_prefix + "/user/updateProfile", user.updateProfile
 
 #http-server setup
-http_port = 8084
+http_port = 80
 app.listen http_port, ->
   console.log "Express server listening on port " + http_port
