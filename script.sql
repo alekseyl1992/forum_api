@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `forum_api`.`thread` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `title` VARCHAR(255) NOT NULL,
   `slug` VARCHAR(255) NOT NULL,
-  `date` TIMESTAMP NOT NULL,
+  `date` DATETIME NOT NULL,
   `isClosed` TINYINT(1) NOT NULL,
   `isDeleted` TINYINT(1) NOT NULL,
   `message` VARCHAR(1000) NOT NULL,
@@ -81,7 +81,7 @@ DROP TABLE IF EXISTS `forum_api`.`post` ;
 CREATE TABLE IF NOT EXISTS `forum_api`.`post` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `message` VARCHAR(1000) NOT NULL,
-  `date` TIMESTAMP NOT NULL,
+  `date` DATETIME NOT NULL,
   `isApproved` TINYINT(1) NOT NULL,
   `isEdited` TINYINT(1) NOT NULL,
   `isDeleted` TINYINT(1) NOT NULL,

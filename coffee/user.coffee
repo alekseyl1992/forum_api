@@ -18,7 +18,7 @@ module.exports = (pool, async, util) ->
         req.body.email
         req.body.isAnonymous
       ], (err, info) ->
-        if err and err != "ER_DUP_ENTRY"
+        if err and err.code != "ER_DUP_ENTRY"
           util.sendError res, "Unable to create user"
           console.log(err)
           return
@@ -184,31 +184,37 @@ module.exports = (pool, async, util) ->
               util.send res, results
 
 
+    # todo: could be moved to post.list
     listPosts: (req, res) ->
       return if !util.require res, req.query, ["user"]
 
-      query = "select * from post
+      query = "select post.* from post
                 join user on user.email = post.user
                 where user.email = ?"
 
       if req.query.since?
-        query += " " + " and date >= " + req.query.since
+        query += " " + " and date >= " + pool.escape(req.query.since)
 
       query += " order by date"
-      if req.query.order?
-        query += " " + req.query.order
+      if req.query.order == "asc"
+        query += " asc"
+      else if req.query.order == "desc"
+        query += " desc"
 
       if req.query.limit?
-        query += " " + "limit " + req.query.limit
+        query += " " + "limit " + parseInt(req.query.limit)
 
       pool.query query,
         [req.query.user], (err, rows) =>
           if err
-            util.sendError("Unable to list user posts", err)
+            util.sendError(res, "Unable to list user posts")
             console.log(err)
             return
 
-          row.user = req.query.user for row in rows
+          for row in rows
+            row.user = req.query.user
+            row.points = row.likes - row.dislikes
+
           util.send res, rows
 
 
@@ -218,7 +224,7 @@ module.exports = (pool, async, util) ->
       pool.query "delete from follow where follower = ? and followee = ? limit 1",
         [req.body.follower, req.body.followee], (err, rows) =>
           if err
-            util.sendError("Unable to unfollow", err)
+            util.sendError(res, "Unable to unfollow")
             console.log(err)
             return
 
@@ -231,7 +237,7 @@ module.exports = (pool, async, util) ->
       pool.query "update user set name = ?, about = ? where email = ?",
         [req.body.name, req.body.about, req.body.user], (err, rows) =>
           if err
-            util.sendError("Unable to update profile", err)
+            util.sendError(res, "Unable to update profile")
             console.log(err)
             return
 

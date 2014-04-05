@@ -26,12 +26,9 @@ module.exports = (pool, async, util, modules) ->
             req.body.forum,
             req.body.user
           ], (err, info) ->
-            if err and err != "ER_DUP_ENTRY"
+            if err and err.code != "ER_DUP_ENTRY"
               util.sendError res, "Unable to create thread"
               console.log(err)
-              return
-            if err == "ER_DUP_ENTRY"
-              util.sendError(res, "Duplicate entry (thread.slug)")
               return
 
             data = req.body
@@ -186,7 +183,7 @@ module.exports = (pool, async, util, modules) ->
 
       pool.query "insert into subscription (user, thread_id) values (?, ?)",
         [req.body.user, req.body.thread], (err, info) =>
-          if err
+          if err and err.code != "ER_DUP_ENTRY"
             util.sendError(res, "Unable to subscribe")
             console.log(err)
             return
@@ -195,9 +192,9 @@ module.exports = (pool, async, util, modules) ->
 
 
     unsubscribe: (req, res) =>
-      return if !util.require res, req.body, ["thread_id", "user"]
+      return if !util.require res, req.body, ["thread", "user"]
 
-      pool.query "delete from subscription where user = ? and thread = ?",
+      pool.query "delete from subscription where user = ? and thread_id = ?",
         [req.body.user, req.body.thread], (err, info) =>
           if err
             util.sendError(res, "Unable to unsubscribe")

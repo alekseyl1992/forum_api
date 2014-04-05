@@ -29,10 +29,13 @@ module.exports = (pool, async, util, modules) ->
           0, # likes
           0  # dislikes
         ], (err, info) ->
-          if err and err != "ER_DUP_ENTRY"
+          if err and err.code != "ER_DUP_ENTRY"
             util.sendError res, "Unable to create post"
             console.log(err)
             return
+
+          data = req.body
+          data.id = info.insertId
 
           # update thread's posts count
           pool.query "update thread set posts = posts + 1 where id = ?", [req.body.thread], (updateErr, updateInfo) ->
@@ -40,9 +43,6 @@ module.exports = (pool, async, util, modules) ->
               util.sendError res, "Unable to update posts count"
               console.log(updateErr)
               return
-
-            data = req.body
-            data.id = info.insertId
             util.send res, data
 
 
