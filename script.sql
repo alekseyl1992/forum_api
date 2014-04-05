@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS `forum_api`.`thread` (
   `dislikes` INT UNSIGNED NOT NULL,
   `forum` VARCHAR(255) NOT NULL,
   `user` VARCHAR(255) NOT NULL,
+  `posts` INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   INDEX `fk_thread_forum1_idx` (`forum` ASC),
   INDEX `fk_thread_user1_idx` (`user` ASC),

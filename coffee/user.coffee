@@ -85,6 +85,32 @@ module.exports = (pool, async, util) ->
       @_details req, res, req.query.user,
         (err, data) => util.send res, data
 
+    _getRelated: (user, callback) ->
+      tasks = {}
+      tasks.followers = (cb) ->
+        pool.query "select follower from follow where followee = ?",
+          [user], (err, rows) ->
+            if err
+              cb err, null
+            else
+              cb null, rows
+      tasks.followees = (cb) ->
+        pool.query "select followee from follow where follower = ?",
+          [user], (err, rows) ->
+            if err
+              cb err, null
+            else
+              cb null, rows
+      tasks.subscriptions = (cb) ->
+        pool.query "select thread_id from subscription where user = ?",
+          [user], (err, rows) ->
+            if err
+              cb err, null
+            else
+              cb null, rows
+
+      async.parallel tasks, callback
+
 
     follow: (req, res) =>
       return if !util.require res, req.body, ["follower", "followee"]

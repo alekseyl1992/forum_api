@@ -54,6 +54,7 @@ module.exports = (pool, async, util, modules) ->
             return
 
           postData = rows[0]
+          postData.points = postData.likes - postData.dislikes
 
           if req.query.related.length == 0
             cb null, postData
@@ -87,6 +88,9 @@ module.exports = (pool, async, util, modules) ->
         util.send res, data
 
     list: (req, res) ->
+      util.optional req.query,
+        related: []
+
       if req.query.forum?
         selector = "forum"
         value = req.query.forum
@@ -97,7 +101,13 @@ module.exports = (pool, async, util, modules) ->
         util.sendError res, "Forum and user not specified"
         return
 
-      query = "select * from thread where " + selector + " = ?"
+      query = "select * from thread"
+      if "forum" in req.query.related
+        query += " join forum on forum.short_name = thread.forum"
+      if "user" in req.query.related
+        query += " join user on user.email = thread.user"
+      
+      query += " where " + selector + " = ?"
       if req.query.since?
         query += " and date >= " + pool.escape(req.query.since)
 
@@ -110,13 +120,38 @@ module.exports = (pool, async, util, modules) ->
       if req.query.limit?
         query += " limit " + parseInt(req.query.limit)
 
-      pool.query query, [value], (err, rows) =>
+      pool.query {sql: query, nestTables: true}, [value], (err, rows) =>
         if err
           util.sendError res, "Unable to list threads"
           console.log(err)
           return
 
-        util.send res, rows
+        # relate properly:
+        relatedIterator = (row, cb) ->
+          thread = row.thread
+          thread.points = thread.likes - thread.dislikes
+          thread.forum = row.forum if "forum" in req.query.related
+
+          if "user" in req.query.related
+            # query subs, followers and followees
+            modules.user._getRelated thread.user, (err, data) ->
+              if err
+                cb err, null
+                return
+
+              thread.user = row.user
+              thread.user.followers = data.followers
+              thread.user.following = data.followees
+              thread.user.subscriptions = data.subscriptions
+              cb null, thread
+          else
+            cb null, thread
+
+        async.mapSeries rows, relatedIterator, (err, data) ->
+          if err
+            util.sendError(res, "Unable to relate")
+            return
+          util.send res, data
 
     listPosts: (req, res) ->
       modules.post.list req, res
@@ -149,7 +184,7 @@ module.exports = (pool, async, util, modules) ->
     subscribe: (req, res) =>
       return if !util.require res, req.body, ["thread", "user"]
 
-      pool.query "insert into subscription (user, thread) values (?, ?)",
+      pool.query "insert into subscription (user, thread_id) values (?, ?)",
         [req.body.user, req.body.thread], (err, info) =>
           if err
             util.sendError(res, "Unable to subscribe")
@@ -160,7 +195,7 @@ module.exports = (pool, async, util, modules) ->
 
 
     unsubscribe: (req, res) =>
-      return if !util.require res, req.body, ["thread", "user"]
+      return if !util.require res, req.body, ["thread_id", "user"]
 
       pool.query "delete from subscription where user = ? and thread = ?",
         [req.body.user, req.body.thread], (err, info) =>

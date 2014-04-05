@@ -69,7 +69,7 @@ module.exports = (pool, async, util, modules) ->
               join user on post.user = user.email
               where post.forum = ?"
       if req.query.since_id?
-        query += " offset " + req.query.since_id
+        query += " and user.id >= " + parseInt(req.query.since_id)
 
       query += " order by user.id"
       if req.query.order == "asc"

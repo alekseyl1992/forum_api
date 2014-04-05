@@ -34,9 +34,16 @@ module.exports = (pool, async, util, modules) ->
             console.log(err)
             return
 
-          data = req.body
-          data.id = info.insertId
-          util.send res, data
+          # update thread's posts count
+          pool.query "update thread set posts = posts + 1 where id = ?", [req.body.thread], (updateErr, updateInfo) ->
+            if updateErr and updateErr != "ER_DUP_ENTRY"
+              util.sendError res, "Unable to update posts count"
+              console.log(updateErr)
+              return
+
+            data = req.body
+            data.id = info.insertId
+            util.send res, data
 
 
     _details: (req, res, cb) ->
@@ -97,21 +104,33 @@ module.exports = (pool, async, util, modules) ->
         util.send res, data
 
     list: (req, res) ->
+      util.optional req.query,
+        related: []
+
       if req.query.forum?
-        selector = "forum"
+        selector = "post.forum"
         value = req.query.forum
       else if req.query.thread?
-        selector = "thread"
+        selector = "post.thread"
         value = req.query.thread
       else
         util.sendError res, "Forum and thread not specified"
         return
 
-      query = "select * from post where " + selector + " = ?"
-      if req.query.since?
-        query += " and date >= " + pool.escape(req.query.since)
+      query = "select * from post"
 
-      query += " order by date"
+      if "thread" in req.query.related
+        query += " join thread on thread.id = post.thread"
+      if "forum" in req.query.related
+        query += " join forum on forum.short_name = post.forum"
+      if "user" in req.query.related
+        query += " join user on user.email = post.user"
+
+      query += " where " + selector + " = ?"
+      if req.query.since?
+        query += " and post.date >= " + pool.escape(req.query.since)
+
+      query += " order by post.date"
       if req.query.order == "asc"
         query += " asc"
       else if req.query.order == "desc"
@@ -120,14 +139,39 @@ module.exports = (pool, async, util, modules) ->
       if req.query.limit?
         query += " limit " + parseInt(req.query.limit)
 
-      pool.query query, [value], (err, rows) =>
+      pool.query {sql: query, nestTables: true}, [value], (err, rows) =>
         if err
           util.sendError res, "Unable to list posts"
           console.log(err)
           return
 
-        row.points = row.likes - row.dislikes for row in rows
-        util.send res, rows
+        # relate properly:
+        relatedIterator = (row, cb) ->
+          post = row.post
+          post.points = post.likes - post.dislikes
+          post.forum = row.forum if "forum" in req.query.related
+          post.thread = row.thread if "thread" in req.query.related
+
+          if "user" in req.query.related
+            # query subs, followers and followees
+            modules.user._getRelated post.user, (err, data) ->
+              if err
+                cb err, null
+                return
+
+              post.user = row.user
+              post.user.followers = data.followers
+              post.user.following = data.followees
+              post.user.subscriptions = data.subscriptions
+              cb null, post
+          else
+            cb null, post
+
+        async.mapSeries rows, relatedIterator, (err, data) ->
+          if err
+            util.sendError(res, "Unable to relate")
+            return
+          util.send res, data
 
 
     remove: (req, res) ->
@@ -162,7 +206,7 @@ module.exports = (pool, async, util, modules) ->
     update: (req, res) =>
       return if !util.require res, req.body, ["post", "message"]
 
-      pool.query "update post set isEdited = 1, message = ?
+      pool.query "update post set message = ?
                   where id = ?",
         [req.body.message, req.body.post],
         (err, info) =>
