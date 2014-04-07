@@ -15,11 +15,11 @@
 NAME=forum_api                  # Unique name for the application
 NODE_ENV=production                 # Node environment
 PORT=80                           # Port (in this case the application uses process.env.PORT to set the port)
-INSTANCE_DIR=/home/tpadmin/forum_api        # Location of the application source
+INSTANCE_DIR=/home/tpadmin/forum_api/        # Location of the application source
 COMMAND=coffee                      # Command to run
 SOURCE_NAME=coffee/server.coffee              # Name os the applcation entry point script
  
-user=apache
+user=root
 pidfile=/var/run/$NAME.pid
 logfile=/var/log/$NAME.log
 forever_dir=/var/run/forever        # Forever root directory.
