@@ -18,7 +18,7 @@ module.exports = (pool, async, util) ->
         req.body.email
         req.body.isAnonymous
       ], (err, info) ->
-        if err and err.code != "ER_DUP_ENTRY"
+        if err #and err.code != "ER_DUP_ENTRY"
           util.sendError res, "Unable to create user"
           console.log(err)
           return

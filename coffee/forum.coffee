@@ -21,7 +21,7 @@ module.exports = (pool, async, util, modules) ->
           req.body.short_name,
           req.body.user
         ], (err, info) ->
-          if err and err.code != "ER_DUP_ENTRY"
+          if err #and err.code != "ER_DUP_ENTRY"
             util.sendError res, "Unable to create forum"
             console.log(err)
             return
