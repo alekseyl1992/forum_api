@@ -18,11 +18,12 @@ pool = mysql.createPool(
 
 #modules
 modules = {}
-util  = modules.util  = require("./util.coffee")()
-user  = modules.user  = require("./user.coffee")(pool, async, util)
-forum = modules.forum = require("./forum.coffee")(pool, async, util, modules)
-thread= modules.thread= require("./thread.coffee")(pool, async, util, modules)
-post  = modules.post  = require("./post.coffee")(pool, async, util, modules)
+util    = modules.util    = require("./util.coffee")()
+user    = modules.user    = require("./user.coffee")(pool, async, util)
+forum   = modules.forum   = require("./forum.coffee")(pool, async, util, modules)
+thread  = modules.thread  = require("./thread.coffee")(pool, async, util, modules)
+post    = modules.post    = require("./post.coffee")(pool, async, util, modules)
+db      = modules.db      = require("./db.coffee")(pool, async, util, modules)
 
 #routing
 api_prefix = "/db/api"
@@ -64,6 +65,9 @@ app.get api_prefix + "/user/listFollowing", user.listFollowing
 app.get api_prefix + "/user/listPosts", user.listPosts
 app.post api_prefix + "/user/unfollow", user.unfollow
 app.post api_prefix + "/user/updateProfile", user.updateProfile
+
+app.post api_prefix + "/clear", db.clear
+
 
 #http-server setup
 http_port = 80
