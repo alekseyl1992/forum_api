@@ -13,18 +13,25 @@ module.exports = (pool, async, util, modules) ->
           "SET FOREIGN_KEY_CHECKS=1;"
         ]
 
-      executor = (query, cb) ->
-        pool.query query, (err, info) ->
-          if err
-            cb err
-          else
-            cb null
-
-      async.eachSeries queries, executor, (err) ->
+      pool.getConnection (err, connection) ->
         if err
           util.sendError res, "Unable to clear db"
           console.log(err)
-        else
-          util.send res, {"status": "db cleared successfully"}
+          return
+
+        executor = (query, cb) ->
+          connection.query query, (err, info) ->
+            if err
+              cb err
+            else
+              cb null
+
+        async.eachSeries queries, executor, (err) ->
+          connection.release();
+          if err
+            util.sendError res, "Unable to clear db"
+            console.log(err)
+          else
+            util.send res, {"status": "db cleared successfully"}
 
   return new DB()
