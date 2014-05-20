@@ -5,7 +5,7 @@ async = require("async")
 app.use express.logger("dev") # выводим все запросы со статусами в консоль
 app.use express.bodyParser() # стандартный модуль, для парсинга JSON в запросах
 app.use app.router # модуль для простого задания обработчиков путей
-config = require("./config.coffee")
+config = require("./config/config.coffee")
 
 #mysql configuration
 mysql = require("mysql")
