@@ -5,16 +5,11 @@ async = require("async")
 app.use express.logger("dev") # выводим все запросы со статусами в консоль
 app.use express.bodyParser() # стандартный модуль, для парсинга JSON в запросах
 app.use app.router # модуль для простого задания обработчиков путей
+config = require("./config.coffee")
 
 #mysql configuration
 mysql = require("mysql")
-pool = mysql.createPool(
-  host: "127.0.0.1"
-  database: "forum_api"
-  user: "forum_api_user"
-  password: "forum_api_pswd"
-  dateStrings: true
-)
+pool = mysql.createPool(config)
 
 #modules
 modules = {}
