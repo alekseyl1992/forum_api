@@ -33,7 +33,6 @@ CREATE TABLE IF NOT EXISTS `forum_api`.`user` (
   `email` VARCHAR(255) NOT NULL,
   `about` VARCHAR(1000) NULL,
   `isAnonymous` TINYINT(1) NOT NULL,
-  UNIQUE INDEX `email_UNIQUE` (`email` ASC),
   PRIMARY KEY (`email`),
   INDEX `id_key` (`id` ASC))
 ENGINE = InnoDB;
@@ -98,6 +97,7 @@ CREATE TABLE IF NOT EXISTS `forum_api`.`post` (
   INDEX `fk_post_post1_idx` (`parent` ASC),
   INDEX `fk_post_user1_idx` (`user` ASC),
   INDEX `fk_post_forum1_idx` (`forum` ASC),
+  INDEX `date_index` (`date` ASC),
   CONSTRAINT `fk_post_thread1`
     FOREIGN KEY (`thread`)
     REFERENCES `forum_api`.`thread` (`id`)
